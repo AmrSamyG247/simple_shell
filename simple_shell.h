@@ -51,3 +51,10 @@ ssize_t _getline(char **lineptr);
 int check_builtins(char *token, char *inputcpy2, char **arraytoken);
 exit_t *child_proc(exit_t *estat, char **arraytoken, char *cpy2, char *ipname);
 exit_t *pipex(char **argv);
+
+/* Builtin functions */
+int (*get_cmd_func(char *s))(char **arraytoken);
+int simshell_cd(char **arraytoken);
+int simshell_env(char **arraytoken);
+int simshell_exit(char **arraytoken);
+int simshell_setenv(char **arraytoken);
