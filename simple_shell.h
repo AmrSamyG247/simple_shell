@@ -58,3 +58,9 @@ int simshell_cd(char **arraytoken);
 int simshell_env(char **arraytoken);
 int simshell_exit(char **arraytoken);
 int simshell_setenv(char **arraytoken);
+
+/* Environment modification functions */
+char *_getrealenv(const char *name);
+int _setenv(const char *name, const char *value, int overwrite);
+int _unsetenv(const char *name);
+
