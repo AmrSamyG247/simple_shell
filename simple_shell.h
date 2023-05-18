@@ -64,3 +64,19 @@ char *_getrealenv(const char *name);
 int _setenv(const char *name, const char *value, int overwrite);
 int _unsetenv(const char *name);
 
+/*******Helpers_Functions*********/
+
+/* Memory helper functions */
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
+char *null_init(char *buffer, int bufsize);
+void mem_init(int num, ...);
+void minit2(int num, ...);
+
+/* String helper functions */
+int _strcmp(char *s1, char *s2);
+char *_strcat(char *dest, const char *src, const char *delim);
+char *_strcpy(char *src, char *dest);
+unsigned int _strlen(char *str);
+int colon_check(char *path, char *command, char **buf, struct stat **bufstat);
+
+#endif
