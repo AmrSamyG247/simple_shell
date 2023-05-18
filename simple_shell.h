@@ -79,4 +79,19 @@ char *_strcpy(char *src, char *dest);
 unsigned int _strlen(char *str);
 int colon_check(char *path, char *command, char **buf, struct stat **bufstat);
 
+/* Token helper functions */
+char **create_arraytoken(char *input, char **arraytoken);
+int count_tokens(char *input, const char *delim);
+char *transform_tok(char *command);
+char **tokenize_cmds(char *input, char **cmdtok);
+
+/* Signal helper functions */
+int _atoi(char *s);
+void check_signal(int sig_num);
+
+/* Other helper functions */
+void get_input(char **input, exit_t *estat);
+void vet_input(int i, char *input, exit_t *estat);
+void _free(unsigned int num, ...);
+
 #endif
