@@ -1,135 +1,134 @@
 #include "simple_shell.h"
-
 /**
- * count_tokens - counts the number of tokens to be copied
- * @input: the input string to analyze for tokens
- * @delim: the delimeter string to base tokenization on
- * Return: the number of tokens in the input string
+ * create_write_file -creates  history file
+ * @filename: name of the file
+ * @content_to_wr: command to be stored
+ * Return: 1 on success
  */
-int count_tokens(char *input, const char *delim)
+short create_write_file(const char *filename, char *content_to_wr)
 {
-	int count;
-	char *token;
+	int fd, len, write_chars;
 
-	token = strtok(input, delim);
+	if (!filename)
+		return (-1);
 
-	for (count = 0; token; count++)
-		token = strtok(NULL, delim);
+	fd = open(filename, O_CREAT | O_WRONLY | O_APPEND, 0600);
 
-	return (count);
-}
+	if (fd < 0)
+		return (-1);
 
-/**
- * create_arraytoken - create array of pointers to tokens of the input string
- * @input: a string to tokenize and have the pointers point to those tokens
- * @arraytoken: the pointer array to have point to tokens
- * Return: a poiinter array to the tokens of the input string
- */
-char **create_arraytoken(char *input, char **arraytoken)
-{
-	int i;
-	char *token;
-
-	arraytoken[0] = NULL;
-	if (input == NULL)
-		return (arraytoken);
-	token = strtok(input, " ");
-	if (token == NULL)
-		arraytoken[0] = token;
-	for (i = 0; token; i++)
+	if (content_to_wr && content_to_wr[0] != '\0')
 	{
-		arraytoken[i] = token;
-		token = strtok(NULL, " ");
+		for (len = 0; content_to_wr[len]; len++)
+			;
+		write_chars = write(fd, content_to_wr, len);
+		close(fd);
+		if (write_chars < 0 || write_chars != len)
+			return (-1);
 	}
-	if (i > 0)
-		arraytoken[i] = NULL;
-	return (arraytoken);
+	close(fd);
+	return (1);
 }
-
 /**
- * get_input - gets input from command line or standard input
- * @input: a pointer to a pointer to the input
- * @estat: the struct that tracks exit codes
- * Return: No value
+ * get_filename -  gets the path of the history file
+ * @filename: pointer to the filename
+ * @envp: envs array
+ * Return: returns 1 on success
  */
-void get_input(char **input, exit_t *estat)
+short get_filename(char **filename, char *envp[])
 {
-	int i;
+	char *token;
+	short i = 0;
 
-	i = _getline(input);
-	if (*input == NULL)
+	while (_strncmp(envp[i], "HOME=", 5))
+		i++;
+	if (!envp[i])
+		return (0);
+
+	*filename = malloc(1024); /* ojo */
+	if (!*filename)
+		exit(-1);
+	_strcpy(*filename, envp[i]);
+	token = _strtok(*filename, "=");
+	token = _strtok(NULL, ":");
+
+	_strcpy(*filename, token);
+	_strcat(*filename, "/");
+	_strcat(*filename, "simple_shell_history");
+	return (1);
+}
+/**
+ * print_history -displays the history
+ * @filename: name of the file
+ * Return: void
+ */
+void print_history(char *filename)
+{
+	int fd_h = 0, read_char = 1, close_res, i = 0, flag = 0, j;
+	char buffer[1000000];
+	int flag_hist;
+	int line_count;
+
+	if (!filename)
 		return;
-	if (i < 0)
-	{
-		write(1, "\n", 1);
-		free(*input);
-		exit(estat->code);
-	}
-	for (i = 0; (*input)[i]; i++)
-		;
-	if ((*input)[i - 1] == '\n')
-		(*input)[i - 1] = '\0';
-}
+	fd_h = open(filename, O_RDONLY);
+	if (fd_h < 0)
+		exit(-1);
 
-/**
- * _strtok - tokenizes a string according to a certain delimiter
- * @str: the string to be tokenized
- * @delim: the delimiter to separate tokens
- * @saveptr: a pointer to keep track of the beginning of the token
- * Return: a character pointer to the current delimited token
- */
-char *_strtok(char *str, const char *delim, char **saveptr)
-{
-	int i, j;
-
-	if (str)
-		*saveptr = str;
-	for (i = 0; delim[i]; i++)
+	while (read_char > 0)
 	{
-		if (delim[i] == *saveptr[0])
+		read_char = read(fd_h, buffer, 999999);
+		if (read_char < 0)
+			exit(-1);
+		buffer[read_char] = '\0';
+		if (read_char)
 		{
-			*saveptr[0] = '\0';
-			(*saveptr)++;
-			continue;
+			for (j = 0; buffer[j]; j++)
+				if (buffer[j] == '\n' && !flag_hist)
+					line_count += 1;
+			if (!flag_hist)
+				line_count %= 4096;
+			flag_hist = line_count;
+			print_loop_his(buffer, &i, &line_count, &flag);
+			flag++;
 		}
 	}
-	for (i = 0; *saveptr[i]; i++)
-	{
-		for (j = 0; delim[j]; j++)
-		{
-			if (delim[j] == *saveptr[i])
-			{
-				*saveptr[i] = '\0';
-				*saveptr += (j + 1);
-				return (*saveptr);
-			}
-		}
-	}
-	return (*saveptr);
+	close_res = close(fd_h);
+	if (close_res != 0)
+		exit(-1);
 }
-
 /**
- * tokenize_cmds - tokenizes the input string into a pointer array of commands
- * @input: a character pointer to the input string in memory
- * @cmdtok: a pointer array that points to different sets of commands and args
- * Return: a pointer array for the commands
+ * print_loop_his - loop for history printing
+ * @buffer: read data string
+ * @i: index
+ * @line_count: line coun
+ * @flag: flag
+ * Return: void
  */
-char **tokenize_cmds(char *input, char **cmdtok)
+void print_loop_his(char *buffer, int *i, int *line_count, int *flag)
 {
-	int i;
-	char *token, *inputcpy;
+	int temp;
 
-	i = _strlen(input), mem_init(2, &inputcpy, i);
-	inputcpy = _strcpy(input, inputcpy);
-	i = count_tokens(inputcpy, "\n;");
-	minit2(2, &cmdtok, i);
-	_free(1, inputcpy);
-	token = strtok(input, "\n;");
-	for (i = 0; token; i++)
+	temp = *line_count;
+	while (buffer[*i])
 	{
-		cmdtok[i] = token;
-		token = strtok(NULL, "\n;");
+		if (buffer[*i] == '\n' && buffer[*i + 1])
+		{
+			write(STDIN_FILENO, buffer + *i, 1), (*i)++;
+			write(STDIN_FILENO, " ", 1);
+			print_number(*line_count), (*line_count)++;
+			write(STDIN_FILENO, "  ", 2);
+		}
+		else if (*i == 0 && buffer[*i + 1] && !*flag)
+		{
+			write(STDIN_FILENO, " ", 1);
+			print_number(*line_count), (*line_count)++;
+			write(STDIN_FILENO, "  ", 2);
+			write(STDIN_FILENO, buffer + *i, 1), (*i)++;
+		}
+		else
+			write(STDIN_FILENO, buffer + *i, 1), (*i)++;
 	}
-	cmdtok[i] = NULL;
-	return (cmdtok);
+	*line_count = temp;
 }
+

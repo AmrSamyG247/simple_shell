@@ -1,97 +1,64 @@
 #ifndef _AMR_MERIEM_A
 #define _AMR_MERIEM_A
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdio.h>
+#define _POSIX_C_SOURCE 200809L
 #include <unistd.h>
-#include <string.h>
+#include <linux/limits.h>
 #include <limits.h>
-#include <stddef.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <linux/limits.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <stdarg.h>
-#include <sys/stat.h>
 
-/**
- * struct exit_status - Struct built
- *
- * @message: The exit message
- * @code: The exit code
- * @exit: 1 if should exit shell, 0 if not.
- */
-typedef struct exit_status
-{
-	char *message;
-	int code;
-	int exit;
-} exit_t;
-
-/**
- * struct built - Struct built
- *
- * @cmd: The command
- * @f: The function associated
- */
-typedef struct built
-{
-	char *cmd;
-	int (*f)(char **arraytoken);
-} built_t;
-
-/* Declaration of global variables */
 extern char **environ;
 
-/* Integral functions */
-exit_t *proc(char *input, char *ipname, exit_t *estat);
-exit_t *change_status(exit_t *estat, char *msg, int cd, int flag);
-int niproc(char *av[]);
-char *_getenv(const char *name);
-ssize_t _getline(char **lineptr);
-int check_builtins(char *token, char *inputcpy2, char **arraytoken);
-exit_t *child_proc(exit_t *estat, char **arraytoken, char *cpy2, char *ipname);
-exit_t *pipex(char **argv);
-
-/* Builtin functions */
-int (*get_cmd_func(char *s))(char **arraytoken);
-int simshell_cd(char **arraytoken);
-int simshell_env(char **arraytoken);
-int simshell_exit(char **arraytoken);
-int simshell_setenv(char **arraytoken);
-
-/* Environment modification functions */
-char *_getrealenv(const char *name);
-int _setenv(const char *name, const char *value, int overwrite);
-int _unsetenv(const char *name);
-
-/*******Helpers_Functions*********/
-
-/* Memory helper functions */
-void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
-char *null_init(char *buffer, int bufsize);
-void mem_init(int num, ...);
-void minit2(int num, ...);
-
-/* String helper functions */
-int _strcmp(char *s1, char *s2);
-char *_strcat(char *dest, const char *src, const char *delim);
-char *_strcpy(char *src, char *dest);
-unsigned int _strlen(char *str);
-int colon_check(char *path, char *command, char **buf, struct stat **bufstat);
-
-/* Token helper functions */
-char **create_arraytoken(char *input, char **arraytoken);
-int count_tokens(char *input, const char *delim);
-char *transform_tok(char *command);
-char **tokenize_cmds(char *input, char **cmdtok);
-
-/* Signal helper functions */
-int _atoi(char *s);
-void check_signal(int sig_num);
-
-/* Other helper functions */
-void get_input(char **input, exit_t *estat);
-void vet_input(int i, char *input, exit_t *estat);
-void _free(unsigned int num, ...);
+char *_strcpy(char *, char *);
+int _strlen(char *);
+int _strcmp(char *, char *);
+char *_strcat(char *dest, char *src);
+void my_exit(char *av[], char *alias[], char *filename, char *new_envs[], int);
+int _atoi(char *);
+short _getline(char **command, int *size, int fd);
+void (*signal(int, void (*)(int)))(int);
+void _change_dir(char *path, char *new_envs[]);
+short _strncmp(char *, char *, int);
+short check_newlines(char *av, short *idx);
+char *getenvtok(char *envp[], char *var, char *token[]);
+void set_var(char *arg1, char *arg2, char *new_envs[]);
+void unset_var(char *var_to_rm, char *new_envs[]);
+char *_strtok(char *base, char *delims);
+short check_builtins(char *av[], char *alias[], char *filename,
+char *new_envs[], int status);
+int print_alias(char *av[], char *alias[]);
+short set_alias(char *new_alias, char *alias[]);
+int check_new_alias(char *new_alias);
+void alias_expansion(char *av[], char *alias[]);
+void expand_vars(char *av[], int *status);
+char *_num2str(int num);
+void copy_array(char *av[], char *alias_exp[]);
+short get_filename(char **filename, char *envp[]);
+short create_write_file(const char *filename, char *content_to_wr);
+void print_history(char *filename);
+void print_number(int n);
+void print_loop_his(char *, int *, int *, int *);
+void prepare_command(char *command, char *argv[], char *envp[], char *alias[],
+char *filename, char *new_envs[], int *status);
+void exec_command(char *filename, char *av[], char *prog_name, char *envp[],
+int *status);
+short tokenize(char *command, char *av[], char *alias[], char *filename,
+int *status, char *new_envs[]);
+short get_input(char *av[], char **command, int *args);
+short expand2(char *av[], short *i, short *j, char *not_expanded,
+short *space_flag);
+short expand1(char *av[], short *i, short *j, short *m, int *status,
+char *not_expanded);
+void print_env(void);
+short remove_spaces(char *command);
 
 #endif
+

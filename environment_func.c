@@ -1,112 +1,110 @@
 #include "simple_shell.h"
-
 /**
- * _getrealenv - gets the real environment variable, so we can screw
- * up our system by typing random things into setenv
- * @name: the name of environment variable to be found
- * Return: Environmnet variable.
- */
-char *_getrealenv(const char *name)
+* getenvtok - Get env vars as tokens.
+* @envp: Env.
+* @var: Variable.
+* @token: Array s.
+* Return: String to free
+*/
+char *getenvtok(char *envp[], char *var, char *token[])
 {
-	const char *namecpy;
-	int i, j;
+	short i = 0;
+	char *path_str = NULL;
 
-	for (i = 0; environ[i]; i++)
-	{
-		for (j = 0; environ[i][j]; j++)
-		{
-			namecpy = name;
-			while (environ[i][j] == *namecpy)
-			{
-				j++;
-				namecpy++;
-			}
-			if (*namecpy == '\0')
-			{
-				return (environ[i]);
-			}
-		}
-	}
-
-	return (NULL);
-}
-
-/**
- * _unsetenv - deletes an environment variable
- * @name: the name of the environment variable to be deleted
- * Return: 0 on success, and 1 on failure.
- */
-int _unsetenv(const char *name)
-{
-	char *env;
-
-	env = (_getrealenv(name));
-	env = NULL;
-
-	if (!env)
-		return (0);
-
-	return (1);
-}
-
-/**
- * _setenv - sets or creates an environment variable
- * @name: the name of the environment variable to be changed or created
- * @value: the value to be set with name
- * @overwrite: 1 if you want to overwrite set environment variable, 0 if not
- * Return: 0 on success, 1 on failure.
- */
-int _setenv(const char *name, const char *value, int overwrite)
-{
-	int nlen, vlen;
-	char *env = NULL, *buffer = NULL;
-
-	printf("%s\n", getenv("MAIL"));
-	env = (_getrealenv(name));
-	printf("%s\n", env);
-	if (overwrite)
-	{
-		vlen = _strlen((char *)value);
-		nlen = _strlen((char *)name);
-		buffer = malloc(sizeof(char) * (vlen + nlen + 2));
-		if (!buffer)
-			return (1);
-	}
-
-	if (overwrite)
-	{
-		_strcpy((char *)name, buffer);
-		*(buffer + nlen) = '=';
-		_strcpy((char *)value, buffer + nlen + 1);
-
-		env = buffer;
-	}
-
-	if (env)
-		return (0);
-
-	return (1);
-}
-
-/**
- * simshell_setenv - calls the setenv function with correct parameters
- * @arraytoken: the array of tokens to be passed
- * Return: Always 0.
- */
-int simshell_setenv(char **arraytoken)
-{
-	int i;
-
-	for (i = 0; arraytoken[i]; i++)
+	while (_strncmp(envp[i], var, _strlen(var)))
+		i++;
+	path_str = malloc(_strlen(envp[i]) + 1);
+	if (!path_str)
+		exit(-1);
+	_strcpy(path_str, envp[i]);
+	if (*(path_str + 5) == ':')
+		*(path_str + 4) = '.', *(path_str + 3) = '=';
+	i = 0;
+	_strtok(path_str, "=");
+	while ((token[i++] = _strtok(NULL, ":")))
 		;
+	return (path_str);
+}
+/**
+* set_var - handles the setenv.
+* @arg1: Name .
+* @arg2: Value .
+* @new_envs: New env
+*/
+void set_var(char *arg1, char *arg2, char *new_envs[])
+{
+	char *new_var, var_to_set[ARG_MAX];
+	short i = 0, j = 0;
 
-	if (i != 3)
+	if (!arg1 || !arg2)
 	{
-		write(1, "Error: Wrong amount of arguments\n", 34);
-		return (0);
+		write(STDERR_FILENO, "setenv: parameters not found\n", 29);
+		return;
 	}
 
-	_setenv(arraytoken[1], arraytoken[2], 1);
+	_strcpy(var_to_set, arg1);
+	_strcat(var_to_set, "=");
 
-	return (0);
+	while (environ[i] && _strncmp(environ[i], var_to_set, _strlen(var_to_set)))
+		i++;
+
+	_strcat(var_to_set, arg2);
+	if (environ[i])
+		_strcpy(environ[i], var_to_set);
+	else
+	{
+		new_var = malloc(100);
+		_strcpy(new_var, var_to_set);
+		while (new_envs[j])
+			j++;
+		new_envs[j] = new_var;
+		new_envs[j + 1] = NULL;
+		environ[i++] = new_var;
+		environ[i] = NULL;
+	}
 }
+
+/**
+ * unset_var - unsets an env var
+ * @var_name: var to unset
+ * @new_envs: New env.
+ * Return: void
+ */
+
+void unset_var(char *var_name, char *new_envs[])
+{
+	short i = 0, j = 0;
+	char var_to_rm[ARG_MAX];
+
+	if (!var_name)
+	{
+		write(STDERR_FILENO, "unsetenv: parameter not found\n", 30);
+		return;
+	}
+
+	_strcpy(var_to_rm, var_name);
+	_strcat(var_to_rm, "=");
+
+	while (environ[i] && _strncmp(environ[i], var_to_rm, _strlen(var_to_rm)))
+		i++;
+	for (j = 0; new_envs[j]; j++)
+		if (!_strcmp(new_envs[j], environ[i]))
+			break;
+	if (!environ[i])
+	{
+		write(STDERR_FILENO, "unsetenv: Variable not found\n", 29);
+		return;
+	}
+	else
+	{
+		free(environ[i]);
+	}
+	while (environ[i])
+	{
+		environ[i] = environ[i + 1];
+		new_envs[j] = new_envs[j + 1];
+		i++;
+		j++;
+	}
+}
+
